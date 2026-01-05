@@ -10,5 +10,5 @@ const client = postgres(connectionString || "postgres://localhost:5432/dummy", {
 
 export const db = drizzle(client, {
   schema,
-  logger: process.env.NODE_ENV === "development",
+  logger: true, // Always log queries to see schema-qualified table names
 });
