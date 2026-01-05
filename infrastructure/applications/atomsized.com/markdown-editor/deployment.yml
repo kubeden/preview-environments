@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: markdown-editor
-          image: registry.digitalocean.com/kubeden/markdown-editor:741a51d6043666598c8ecd04e3b91574b4fc1a8b
+          image: registry.digitalocean.com/kubeden/markdown-editor:2178901a0cc074d7237b38a0390df38da908574f
           ports:
             - containerPort: 3000
           env:
