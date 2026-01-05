@@ -5,7 +5,12 @@ import * as schema from "./schema";
 const connectionString = process.env.DATABASE_URL!;
 const dbSchema = process.env.DATABASE_SCHEMA || "public";
 
-const client = postgres(connectionString, {
+// Build connection string with search_path parameter
+const urlWithSchema = connectionString.includes("?")
+  ? `${connectionString}&options=-c%20search_path%3D${dbSchema}`
+  : `${connectionString}?options=-c%20search_path%3D${dbSchema}`;
+
+const client = postgres(urlWithSchema, {
   prepare: false,
 });
 
