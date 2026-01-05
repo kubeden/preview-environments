@@ -1,6 +1,12 @@
-import { pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
+import { pgSchema, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
 
-export const documents = pgTable("documents", {
+// Get schema from environment - defaults to public for production
+const schemaName = process.env.DATABASE_SCHEMA || "public";
+
+// Create schema reference for schema-qualified queries
+const dbSchema = pgSchema(schemaName);
+
+export const documents = dbSchema.table("documents", {
   id: uuid("id").primaryKey().defaultRandom(),
   title: text("title").notNull().default("Untitled"),
   content: text("content").notNull().default(""),
