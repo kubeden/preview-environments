@@ -73,30 +73,33 @@ jobs:
           fetch-depth: 0
 
       - name: Create preview environment
+        env:
+          BRANCH: ${{ github.head_ref }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          REPO: ${{ github.repository }}
+          REGISTRY_NAME: ${{ secrets.DO_REGISTRY_NAME }}
         run: |
-          BRANCH="${{ github.head_ref }}"
           SANITIZED_BRANCH=$(echo "$BRANCH" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9-]/-/g' | sed 's/--*/-/g' | sed 's/^-//' | sed 's/-$//')
-          PR_NUMBER="${{ github.event.pull_request.number }}"
           IMAGE_TAG="pr-${PR_NUMBER}"
 
           mkdir -p infrastructure/preview-environments
 
-          cat > infrastructure/preview-environments/pr-${PR_NUMBER}.yaml << 'EOF'
+          cat > infrastructure/preview-environments/pr-${PR_NUMBER}.yaml << EOF
           apiVersion: argoproj.io/v1alpha1
           kind: Application
           metadata:
-            name: markdown-editor-preview-SANITIZED_BRANCH
+            name: markdown-editor-preview-${SANITIZED_BRANCH}
             namespace: argocd
             labels:
               preview: "true"
-              pr-number: "PR_NUMBER"
+              pr-number: "${PR_NUMBER}"
             finalizers:
               - resources-finalizer.argocd.argoproj.io
           spec:
             project: default
             source:
-              repoURL: https://github.com/${{ github.repository }}
-              targetRevision: BRANCH
+              repoURL: https://github.com/${REPO}
+              targetRevision: ${BRANCH}
               path: infrastructure/applications/atomsized.com/markdown-editor
               kustomize:
                 patches:
@@ -106,27 +109,27 @@ jobs:
                     patch: |
                       - op: replace
                         path: /spec/rules/0/host
-                        value: SANITIZED_BRANCH.atomsized.com
+                        value: ${SANITIZED_BRANCH}.atomsized.com
                       - op: replace
                         path: /spec/tls/0/hosts/0
-                        value: SANITIZED_BRANCH.atomsized.com
+                        value: ${SANITIZED_BRANCH}.atomsized.com
                   - target:
                       kind: ConfigMap
                       name: markdown-editor-config
                     patch: |
                       - op: replace
                         path: /data/database-schema
-                        value: preview_BRANCH
+                        value: preview_${BRANCH}
                   - target:
                       kind: Deployment
                       name: markdown-editor
                     patch: |
                       - op: replace
                         path: /spec/template/spec/containers/0/image
-                        value: registry.digitalocean.com/${{ secrets.DO_REGISTRY_NAME }}/markdown-editor:IMAGE_TAG
+                        value: registry.digitalocean.com/${REGISTRY_NAME}/markdown-editor:${IMAGE_TAG}
             destination:
               server: https://kubernetes.default.svc
-              namespace: preview-SANITIZED_BRANCH
+              namespace: preview-${SANITIZED_BRANCH}
             syncPolicy:
               automated:
                 prune: true
@@ -134,12 +137,6 @@ jobs:
               syncOptions:
                 - CreateNamespace=true
           EOF
-
-          # Replace placeholders
-          sed -i "s/SANITIZED_BRANCH/${SANITIZED_BRANCH}/g" infrastructure/preview-environments/pr-${PR_NUMBER}.yaml
-          sed -i "s/PR_NUMBER/${PR_NUMBER}/g" infrastructure/preview-environments/pr-${PR_NUMBER}.yaml
-          sed -i "s/IMAGE_TAG/${IMAGE_TAG}/g" infrastructure/preview-environments/pr-${PR_NUMBER}.yaml
-          sed -i "s|BRANCH|${BRANCH}|g" infrastructure/preview-environments/pr-${PR_NUMBER}.yaml
 
       - name: Commit preview environment config
         run: |
@@ -151,21 +148,29 @@ jobs:
 
       - name: Comment on PR
         uses: actions/github-script@v7
+        env:
+          BRANCH: ${{ github.head_ref }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
         with:
           script: |
-            const branch = '${{ github.head_ref }}'.toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/--+/g, '-').replace(/^-|-$/g, '');
+            const branch = process.env.BRANCH.toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/--+/g, '-').replace(/^-|-$/g, '');
             const url = `https://${branch}.atomsized.com`;
+            const prNumber = process.env.PR_NUMBER;
+
+            const body = [
+              '## Preview Environment',
+              '',
+              'Your preview environment is being deployed:',
+              `- **URL:** ${url}`,
+              `- **Schema:** \`preview_${process.env.BRANCH}\``,
+              `- **Image:** \`pr-${prNumber}\``,
+              '',
+              'The environment will be ready in a few minutes once ArgoCD syncs.'
+            ].join('\n');
 
             github.rest.issues.createComment({
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: `## Preview Environment
-
-Your preview environment is being deployed:
-- **URL:** ${url}
-- **Schema:** \`preview_${{ github.head_ref }}\`
-- **Image:** \`pr-${{ github.event.pull_request.number }}\`
-
-The environment will be ready in a few minutes once ArgoCD syncs.`
+              body: body
             });
