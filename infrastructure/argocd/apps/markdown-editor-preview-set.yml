@@ -55,6 +55,12 @@ spec:
                   - op: replace
                     path: /spec/template/spec/containers/0/image
                     value: "registry.digitalocean.com/kubeden/markdown-editor:pr-{{number}}"
+                  - op: replace
+                    path: /spec/template/spec/containers/0/env/0/valueFrom/secretKeyRef/name
+                    value: "preview-{{number}}-markdown-editor-secrets"
+                  - op: replace
+                    path: /spec/template/spec/containers/0/env/1/valueFrom/configMapKeyRef/name
+                    value: "preview-{{number}}-markdown-editor-config"
         - repoURL: git@github.com:kubeden/clopus-preview-environments.git
           targetRevision: main
           path: infrastructure/preview-secrets
