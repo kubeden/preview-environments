@@ -6,3 +6,4 @@ resources:
   - deployment.yml
   - ingress.yml
   - service.yml
+  - secrets-sealed.yml
