@@ -8,7 +8,7 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/kuberdenis/clopus-preview-environments
+    repoURL: https://github.com/kubeden/clopus-preview-environments
     targetRevision: main
     path: infrastructure/applications/atomsized.com
     directory:
