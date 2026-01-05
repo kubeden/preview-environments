@@ -27,8 +27,9 @@ spec:
       source:
         repoURL: git@github.com:kubeden/clopus-preview-environments.git
         targetRevision: "{{branch}}"
-        path: infrastructure/applications/atomsized.com/markdown-editor
+        path: infrastructure/applications/atomsized.com/markdown-editor/overlays/preview
         kustomize:
+          namePrefix: "preview-{{number}}-"
           patches:
             - target:
                 kind: Ingress
