@@ -1,5 +1,5 @@
 import { db } from "@/db";
-import { documents } from "@/db/schema";
+import { getDocumentsTable } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -10,6 +10,7 @@ interface RouteParams {
 export async function PATCH(request: NextRequest, { params }: RouteParams) {
   const { id } = await params;
   const body = await request.json();
+  const documents = getDocumentsTable();
 
   const updateData: { content?: string; title?: string; updatedAt: Date } = {
     updatedAt: new Date(),
@@ -38,6 +39,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 
 export async function DELETE(_request: NextRequest, { params }: RouteParams) {
   const { id } = await params;
+  const documents = getDocumentsTable();
 
   const [deleted] = await db
     .delete(documents)
