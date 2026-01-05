@@ -1,0 +1,56 @@
+name: Build and Push
+
+on:
+  workflow_call:
+    inputs:
+      app-path:
+        required: true
+        type: string
+        description: "Path to the application directory"
+      image-name:
+        required: true
+        type: string
+        description: "Name of the Docker image"
+      tag:
+        required: true
+        type: string
+        description: "Docker image tag"
+    outputs:
+      image:
+        description: "Full image reference"
+        value: ${{ jobs.build.outputs.image }}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    outputs:
+      image: ${{ steps.meta.outputs.image }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install doctl
+        uses: digitalocean/action-doctl@v2
+        with:
+          token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+
+      - name: Log in to DO Container Registry
+        run: doctl registry login --expiry-seconds 1200
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Set image metadata
+        id: meta
+        run: |
+          IMAGE="registry.digitalocean.com/${{ secrets.DO_REGISTRY_NAME }}/${{ inputs.image-name }}:${{ inputs.tag }}"
+          echo "image=$IMAGE" >> $GITHUB_OUTPUT
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ inputs.app-path }}
+          push: true
+          tags: ${{ steps.meta.outputs.image }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

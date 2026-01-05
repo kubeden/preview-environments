@@ -1,25 +1,20 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: atomsized-apps
+  name: preview-environments
   namespace: argocd
-  finalizers:
-    - resources-finalizer.argocd.argoproj.io
 spec:
   project: default
   source:
     repoURL: https://github.com/kuberdenis/clopus-preview-environments
     targetRevision: main
-    path: infrastructure/applications/atomsized.com
+    path: infrastructure/preview-environments
     directory:
-      recurse: true
-      exclude: "app-of-apps.yml"
+      recurse: false
   destination:
     server: https://kubernetes.default.svc
-    namespace: atomsized
+    namespace: argocd
   syncPolicy:
     automated:
       prune: true
       selfHeal: true
-    syncOptions:
-      - CreateNamespace=true

@@ -1,0 +1,60 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "applications/**"
+
+jobs:
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      markdown-editor: ${{ steps.filter.outputs.markdown-editor }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            markdown-editor:
+              - 'applications/atomsized/markdown-editor/**'
+
+  build-markdown-editor:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.markdown-editor == 'true'
+    uses: ./.github/workflows/build-and-push.yml
+    with:
+      app-path: applications/atomsized/markdown-editor
+      image-name: markdown-editor
+      tag: ${{ github.sha }}
+    secrets: inherit
+
+  deploy:
+    needs: build-markdown-editor
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Update image tag in manifests
+        run: |
+          cd infrastructure/applications/atomsized.com/markdown-editor
+          sed -i "s|image:.*|image: registry.digitalocean.com/${{ secrets.DO_REGISTRY_NAME }}/markdown-editor:${{ github.sha }}|" deployment.yml
+
+      - name: Commit updated manifests
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add infrastructure/
+          git diff --staged --quiet || git commit -m "chore: deploy markdown-editor ${{ github.sha }}"
+          git push origin main
+
+      - name: Run production migrations
+        working-directory: applications/atomsized/markdown-editor
+        run: |
+          npm ci
+          npm run db:migrate
+        env:
+          DATABASE_URL: ${{ secrets.SUPABASE_DATABASE_URL }}
+          DATABASE_SCHEMA: public

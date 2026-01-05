@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: markdown-editor
+  labels:
+    app: markdown-editor
+spec:
+  type: ClusterIP
+  ports:
+    - port: 80
+      targetPort: 3000
+      protocol: TCP
+  selector:
+    app: markdown-editor

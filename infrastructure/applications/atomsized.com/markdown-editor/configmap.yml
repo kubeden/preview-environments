@@ -1,0 +1,6 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: markdown-editor-config
+data:
+  database-schema: "public"

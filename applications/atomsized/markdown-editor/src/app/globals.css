@@ -1,0 +1,118 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+:root {
+  --bg-primary: #0a0a0a;
+  --bg-secondary: #141414;
+  --bg-tertiary: #1a1a1a;
+  --text-primary: #fafafa;
+  --text-secondary: #a0a0a0;
+  --text-muted: #666;
+  --border: #2a2a2a;
+  --accent: #fff;
+}
+
+html,
+body {
+  height: 100%;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+/* Override MDEditor styles for dark minimal theme */
+.w-md-editor {
+  --color-canvas-default: var(--bg-secondary) !important;
+  --color-canvas-subtle: var(--bg-tertiary) !important;
+  --color-border-default: var(--border) !important;
+  --color-border-muted: var(--border) !important;
+  --color-fg-default: var(--text-primary) !important;
+  --color-fg-muted: var(--text-secondary) !important;
+  background-color: var(--bg-secondary) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 8px !important;
+}
+
+.w-md-editor-toolbar {
+  background-color: var(--bg-tertiary) !important;
+  border-bottom: 1px solid var(--border) !important;
+  border-radius: 8px 8px 0 0 !important;
+}
+
+.w-md-editor-toolbar li > button {
+  color: var(--text-secondary) !important;
+}
+
+.w-md-editor-toolbar li > button:hover {
+  color: var(--text-primary) !important;
+  background-color: var(--bg-secondary) !important;
+}
+
+.w-md-editor-text-pre > code,
+.w-md-editor-text-input {
+  font-family: "SF Mono", "Monaco", "Inconsolata", "Fira Code", monospace !important;
+  font-size: 14px !important;
+  line-height: 1.6 !important;
+}
+
+.w-md-editor-preview {
+  background-color: var(--bg-secondary) !important;
+  padding: 20px !important;
+}
+
+.wmde-markdown {
+  background-color: transparent !important;
+  color: var(--text-primary) !important;
+  font-size: 15px !important;
+  line-height: 1.7 !important;
+}
+
+.wmde-markdown h1,
+.wmde-markdown h2,
+.wmde-markdown h3,
+.wmde-markdown h4,
+.wmde-markdown h5,
+.wmde-markdown h6 {
+  color: var(--text-primary) !important;
+  border-bottom-color: var(--border) !important;
+}
+
+.wmde-markdown code {
+  background-color: var(--bg-tertiary) !important;
+  color: var(--text-primary) !important;
+}
+
+.wmde-markdown pre {
+  background-color: var(--bg-tertiary) !important;
+  border: 1px solid var(--border) !important;
+}
+
+.wmde-markdown blockquote {
+  border-left-color: var(--border) !important;
+  color: var(--text-secondary) !important;
+}
+
+.wmde-markdown hr {
+  background-color: var(--border) !important;
+}
+
+.wmde-markdown a {
+  color: var(--text-primary) !important;
+}
+
+.wmde-markdown table th,
+.wmde-markdown table td {
+  border-color: var(--border) !important;
+}
+
+.wmde-markdown table tr {
+  background-color: transparent !important;
+  border-top-color: var(--border) !important;
+}
+
+.wmde-markdown table tr:nth-child(2n) {
+  background-color: var(--bg-tertiary) !important;
+}
