@@ -20,7 +20,11 @@ async function main() {
   // Set search path to the schema
   await client`SET search_path TO ${client(schema)}`;
 
-  await migrate(db, { migrationsFolder: "./drizzle" });
+  // Track migrations in the target schema so each preview has its own state
+  await migrate(db, {
+    migrationsFolder: "./drizzle",
+    migrationsSchema: schema
+  });
 
   console.log("Migrations complete");
   await client.end();
