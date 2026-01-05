@@ -6,6 +6,10 @@ on:
     paths:
       - "applications/**"
 
+permissions:
+  contents: write
+  pull-requests: write
+
 concurrency:
   group: preview-${{ github.head_ref }}
   cancel-in-progress: true
