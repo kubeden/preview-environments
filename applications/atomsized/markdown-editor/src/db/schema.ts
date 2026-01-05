@@ -16,10 +16,13 @@ const publicDocuments = pgTable("documents", tableColumns);
 // This ensures DATABASE_SCHEMA is read at runtime, not build time
 export function getDocumentsTable() {
   const schemaName = process.env.DATABASE_SCHEMA || "public";
+  console.log("[schema] DATABASE_SCHEMA:", schemaName);
   if (schemaName === "public") {
     return publicDocuments;
   }
-  return pgSchema(schemaName).table("documents", tableColumns);
+  const customTable = pgSchema(schemaName).table("documents", tableColumns);
+  console.log("[schema] Using schema-qualified table for:", schemaName);
+  return customTable;
 }
 
 // Export static reference for types (uses public schema)
