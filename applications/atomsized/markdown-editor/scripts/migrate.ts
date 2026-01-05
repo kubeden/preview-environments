@@ -20,13 +20,23 @@ async function main() {
   // Set search path to the schema
   await client`SET search_path TO ${client(schema)}`;
 
-  // Track migrations in the target schema so each preview has its own state
-  await migrate(db, {
-    migrationsFolder: "./drizzle",
-    migrationsSchema: schema
-  });
+  try {
+    // Track migrations in the target schema so each preview has its own state
+    await migrate(db, {
+      migrationsFolder: "./drizzle",
+      migrationsSchema: schema
+    });
+    console.log("Migrations complete");
+  } catch (err: any) {
+    // Handle "already exists" errors gracefully (code 42P07)
+    // This can happen when migrating existing databases
+    if (err.code === "42P07") {
+      console.log("Tables already exist, skipping migrations");
+    } else {
+      throw err;
+    }
+  }
 
-  console.log("Migrations complete");
   await client.end();
   process.exit(0);
 }
