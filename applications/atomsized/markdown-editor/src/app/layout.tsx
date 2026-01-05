@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Markdown Editor",
-  description: "A minimal markdown editor",
+  title: "Markdown Editor | Atomsized",
+  description: "A minimal markdown editor by Atomsized",
 };
 
 export default function RootLayout({
