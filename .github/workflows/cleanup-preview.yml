@@ -5,7 +5,7 @@ on:
     types: [closed]
 
 permissions:
-  contents: write
+  contents: read
   pull-requests: write
 
 jobs:
@@ -13,18 +13,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: main
-
-      - name: Remove preview environment config
-        run: |
-          rm -f infrastructure/preview-environments/pr-${{ github.event.pull_request.number }}.yaml
-
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add infrastructure/preview-environments/
-          git diff --staged --quiet || git commit -m "chore: cleanup preview environment for PR #${{ github.event.pull_request.number }}"
-          git push origin main
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -40,7 +28,7 @@ jobs:
         run: npx tsx scripts/drop-schema.ts
         env:
           DATABASE_URL: ${{ secrets.SUPABASE_DATABASE_URL }}
-          DATABASE_SCHEMA: preview_${{ github.head_ref }}
+          DATABASE_SCHEMA: preview_${{ github.event.pull_request.number }}
 
       - name: Delete container image
         continue-on-error: true
@@ -53,12 +41,13 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
+            const prNumber = context.issue.number;
             const body = [
               '## Preview Environment Cleaned Up',
               '',
               'The preview environment has been removed:',
-              '- ArgoCD Application deleted',
-              '- Database schema `preview_${{ github.head_ref }}` dropped',
+              '- ArgoCD Application deleted (via ApplicationSet)',
+              `- Database schema \`preview_${prNumber}\` dropped`,
               '- Container image cleaned up'
             ].join('\n');
 

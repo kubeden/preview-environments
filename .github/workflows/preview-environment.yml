@@ -7,7 +7,7 @@ on:
       - "applications/**"
 
 permissions:
-  contents: write
+  contents: read
   pull-requests: write
 
 concurrency:
@@ -65,91 +65,12 @@ jobs:
         run: npm run db:migrate
         env:
           DATABASE_URL: ${{ secrets.SUPABASE_DATABASE_URL }}
-          DATABASE_SCHEMA: preview_${{ github.head_ref }}
+          DATABASE_SCHEMA: preview_${{ github.event.pull_request.number }}
 
-  deploy-preview:
+  comment-on-pr:
     needs: [build-markdown-editor, setup-preview-schema]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: main
-          fetch-depth: 0
-
-      - name: Create preview environment
-        env:
-          BRANCH: ${{ github.head_ref }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-          REPO: ${{ github.repository }}
-          REGISTRY_NAME: ${{ secrets.DO_REGISTRY_NAME }}
-        run: |
-          SANITIZED_BRANCH=$(echo "$BRANCH" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9-]/-/g' | sed 's/--*/-/g' | sed 's/^-//' | sed 's/-$//')
-          IMAGE_TAG="pr-${PR_NUMBER}"
-
-          mkdir -p infrastructure/preview-environments
-
-          cat > infrastructure/preview-environments/pr-${PR_NUMBER}.yaml << EOF
-          apiVersion: argoproj.io/v1alpha1
-          kind: Application
-          metadata:
-            name: markdown-editor-preview-${SANITIZED_BRANCH}
-            namespace: argocd
-            labels:
-              preview: "true"
-              pr-number: "${PR_NUMBER}"
-            finalizers:
-              - resources-finalizer.argocd.argoproj.io
-          spec:
-            project: default
-            source:
-              repoURL: git@github.com:${REPO}.git
-              targetRevision: ${BRANCH}
-              path: infrastructure/applications/atomsized.com/markdown-editor
-              kustomize:
-                patches:
-                  - target:
-                      kind: Ingress
-                      name: markdown-editor
-                    patch: |
-                      - op: replace
-                        path: /spec/rules/0/host
-                        value: ${SANITIZED_BRANCH}.atomsized.com
-                      - op: replace
-                        path: /spec/tls/0/hosts/0
-                        value: ${SANITIZED_BRANCH}.atomsized.com
-                  - target:
-                      kind: ConfigMap
-                      name: markdown-editor-config
-                    patch: |
-                      - op: replace
-                        path: /data/database-schema
-                        value: preview_${BRANCH}
-                  - target:
-                      kind: Deployment
-                      name: markdown-editor
-                    patch: |
-                      - op: replace
-                        path: /spec/template/spec/containers/0/image
-                        value: registry.digitalocean.com/${REGISTRY_NAME}/markdown-editor:${IMAGE_TAG}
-            destination:
-              server: https://kubernetes.default.svc
-              namespace: preview-${SANITIZED_BRANCH}
-            syncPolicy:
-              automated:
-                prune: true
-                selfHeal: true
-              syncOptions:
-                - CreateNamespace=true
-          EOF
-
-      - name: Commit preview environment config to main
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add infrastructure/preview-environments/
-          git diff --staged --quiet || git commit -m "chore: create preview environment for PR #${{ github.event.pull_request.number }}"
-          git push origin main
-
       - name: Comment on PR
         uses: actions/github-script@v7
         env:
@@ -166,10 +87,10 @@ jobs:
               '',
               'Your preview environment is being deployed:',
               `- **URL:** ${url}`,
-              `- **Schema:** \`preview_${process.env.BRANCH}\``,
+              `- **Schema:** \`preview_${prNumber}\``,
               `- **Image:** \`pr-${prNumber}\``,
               '',
-              'The environment will be ready in a few minutes once ArgoCD syncs.'
+              'The environment will be ready once ArgoCD syncs the ApplicationSet.'
             ].join('\n');
 
             github.rest.issues.createComment({
