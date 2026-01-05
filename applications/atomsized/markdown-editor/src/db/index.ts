@@ -5,7 +5,7 @@ import * as schema from "./schema";
 const connectionString = process.env.DATABASE_URL || "";
 const dbSchema = process.env.DATABASE_SCHEMA || "public";
 
-// Build connection string with search_path parameter
+// Build connection string with search_path parameter for schema isolation
 const urlWithSchema = connectionString
   ? connectionString.includes("?")
     ? `${connectionString}&options=-c%20search_path%3D${dbSchema}`
