@@ -6,7 +6,7 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/kubeden/clopus-preview-environments
+    repoURL: git@github.com:kubeden/clopus-preview-environments.git
     targetRevision: main
     path: infrastructure/preview-environments
     directory:

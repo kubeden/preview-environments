@@ -98,7 +98,7 @@ jobs:
           spec:
             project: default
             source:
-              repoURL: https://github.com/${REPO}
+              repoURL: git@github.com:${REPO}.git
               targetRevision: ${BRANCH}
               path: infrastructure/applications/atomsized.com/markdown-editor
               kustomize:

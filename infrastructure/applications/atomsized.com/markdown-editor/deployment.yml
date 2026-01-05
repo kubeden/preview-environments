@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: markdown-editor
-          image: registry.digitalocean.com/clopus/markdown-editor:latest
+          image: registry.digitalocean.com/kubeden/markdown-editor:latest
           ports:
             - containerPort: 3000
           env:
@@ -50,4 +50,4 @@ spec:
             initialDelaySeconds: 5
             periodSeconds: 5
       imagePullSecrets:
-        - name: do-registry
+        - name: kubeden
