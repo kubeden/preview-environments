@@ -1,5 +1,5 @@
 import { db } from "@/db";
-import { documents } from "@/db/schema";
+import { getDocumentsTable } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import { Editor } from "./editor";
@@ -12,6 +12,7 @@ interface PageProps {
 
 export default async function DocumentPage({ params }: PageProps) {
   const { id } = await params;
+  const documents = getDocumentsTable();
 
   const [doc] = await db.select().from(documents).where(eq(documents.id, id));
 

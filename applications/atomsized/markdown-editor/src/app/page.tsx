@@ -1,11 +1,14 @@
 import { db } from "@/db";
-import { documents } from "@/db/schema";
+import { getDocumentsTable } from "@/db/schema";
 import { desc } from "drizzle-orm";
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
+  const documents = getDocumentsTable();
+  const isPreview = process.env.DATABASE_SCHEMA && process.env.DATABASE_SCHEMA !== "public";
+
   const docs = await db
     .select()
     .from(documents)
@@ -29,7 +32,7 @@ export default async function Home() {
           marginBottom: "40px",
         }}
       >
-        <h1 style={{ fontSize: "24px", fontWeight: 500 }}>My Documents (Preview)</h1>
+        <h1 style={{ fontSize: "24px", fontWeight: 500 }}>My Documents{isPreview ? " (Preview)" : ""}</h1>
         <Link
           href="/new"
           style={{
