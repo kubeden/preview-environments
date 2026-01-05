@@ -1,0 +1,51 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: markdown-editor-preview-feature-dark-mode-toggle
+  namespace: argocd
+  labels:
+    preview: "true"
+    pr-number: "1"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: git@github.com:kubeden/clopus-preview-environments.git
+    targetRevision: feature/dark-mode-toggle
+    path: infrastructure/applications/atomsized.com/markdown-editor
+    kustomize:
+      patches:
+        - target:
+            kind: Ingress
+            name: markdown-editor
+          patch: |
+            - op: replace
+              path: /spec/rules/0/host
+              value: feature-dark-mode-toggle.atomsized.com
+            - op: replace
+              path: /spec/tls/0/hosts/0
+              value: feature-dark-mode-toggle.atomsized.com
+        - target:
+            kind: ConfigMap
+            name: markdown-editor-config
+          patch: |
+            - op: replace
+              path: /data/database-schema
+              value: preview_feature/dark-mode-toggle
+        - target:
+            kind: Deployment
+            name: markdown-editor
+          patch: |
+            - op: replace
+              path: /spec/template/spec/containers/0/image
+              value: registry.digitalocean.com/kubeden/markdown-editor:pr-1
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: preview-feature-dark-mode-toggle
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
