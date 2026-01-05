@@ -24,37 +24,42 @@ spec:
         - resources-finalizer.argocd.argoproj.io
     spec:
       project: default
-      source:
-        repoURL: git@github.com:kubeden/clopus-preview-environments.git
-        targetRevision: "{{branch}}"
-        path: infrastructure/applications/atomsized.com/markdown-editor/overlays/preview
-        kustomize:
-          namePrefix: "preview-{{number}}-"
-          patches:
-            - target:
-                kind: Ingress
-                name: markdown-editor
-              patch: |
-                - op: replace
-                  path: /spec/rules/0/host
-                  value: "{{branch_slug}}.atomsized.com"
-                - op: replace
-                  path: /spec/tls/0/hosts/0
-                  value: "{{branch_slug}}.atomsized.com"
-            - target:
-                kind: ConfigMap
-                name: markdown-editor-config
-              patch: |
-                - op: replace
-                  path: /data/database-schema
-                  value: "preview_{{number}}"
-            - target:
-                kind: Deployment
-                name: markdown-editor
-              patch: |
-                - op: replace
-                  path: /spec/template/spec/containers/0/image
-                  value: "registry.digitalocean.com/kubeden/markdown-editor:pr-{{number}}"
+      sources:
+        - repoURL: git@github.com:kubeden/clopus-preview-environments.git
+          targetRevision: "{{branch}}"
+          path: infrastructure/applications/atomsized.com/markdown-editor
+          kustomize:
+            namePrefix: "preview-{{number}}-"
+            patches:
+              - target:
+                  kind: Ingress
+                  name: markdown-editor
+                patch: |
+                  - op: replace
+                    path: /spec/rules/0/host
+                    value: "{{branch_slug}}.atomsized.com"
+                  - op: replace
+                    path: /spec/tls/0/hosts/0
+                    value: "{{branch_slug}}.atomsized.com"
+              - target:
+                  kind: ConfigMap
+                  name: markdown-editor-config
+                patch: |
+                  - op: replace
+                    path: /data/database-schema
+                    value: "preview_{{number}}"
+              - target:
+                  kind: Deployment
+                  name: markdown-editor
+                patch: |
+                  - op: replace
+                    path: /spec/template/spec/containers/0/image
+                    value: "registry.digitalocean.com/kubeden/markdown-editor:pr-{{number}}"
+        - repoURL: git@github.com:kubeden/clopus-preview-environments.git
+          targetRevision: main
+          path: infrastructure/preview-secrets
+          kustomize:
+            namePrefix: "preview-{{number}}-"
       destination:
         server: https://kubernetes.default.svc
         namespace: "preview-{{number}}"
