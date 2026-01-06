@@ -12,7 +12,7 @@ spec:
     targetRevision: main
     path: infrastructure/applications/atomsized.com/markdown-editor
     directory:
-      recurse: false
+      recurse: true
       include: '{main-app/application.yml,preview/applicationset.yml,preview/secrets/github-token.yml}'
   destination:
     server: https://kubernetes.default.svc
