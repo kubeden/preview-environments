@@ -32,7 +32,7 @@ export default async function Home() {
           marginBottom: "40px",
         }}
       >
-        <h1 style={{ fontSize: "24px", fontWeight: 500 }}>My Documents{isPreview ? " (Preview)" : ""}</h1>
+        <h1 style={{ fontSize: "24px", fontWeight: 500 }}>My Documents{isPreview ? ` (Preview: ${process.env.DATABASE_SCHEMA})` : ""}</h1>
         <Link
           href="/new"
           style={{
