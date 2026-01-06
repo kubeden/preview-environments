@@ -42,8 +42,7 @@ jobs:
 
       - name: Update image tag in manifests
         run: |
-          cd infrastructure/applications/atomsized.com/markdown-editor
-          sed -i "s|image:.*|image: registry.digitalocean.com/${{ secrets.DO_REGISTRY_NAME }}/markdown-editor:${{ github.sha }}|" deployment.yml
+          sed -i "s|image:.*markdown-editor.*|image: registry.digitalocean.com/${{ secrets.DO_REGISTRY_NAME }}/markdown-editor:${{ github.sha }}|" infrastructure/applications/atomsized.com/markdown-editor/main-app/src/deployment.yml
 
       - name: Commit updated manifests
         run: |

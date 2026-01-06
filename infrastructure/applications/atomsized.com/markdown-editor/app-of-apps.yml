@@ -1,0 +1,23 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: atomsized-md-app-of-apps
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: git@github.com:kubeden/clopus-preview-environments.git
+    targetRevision: main
+    path: infrastructure/applications/atomsized.com/markdown-editor
+    directory:
+      recurse: false
+      include: '{main-app/application.yml,preview/applicationset.yml,preview/secrets/github-token.yml}'
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true

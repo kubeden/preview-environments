@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: ApplicationSet
 metadata:
-  name: markdown-editor-preview
+  name: atomsized-md-preview
   namespace: argocd
 spec:
   generators:
@@ -15,7 +15,7 @@ spec:
         requeueAfterSeconds: 30
   template:
     metadata:
-      name: "markdown-editor-preview-{{number}}"
+      name: "atomsized-md-preview-{{number}}"
       namespace: argocd
       labels:
         preview: "true"
@@ -27,7 +27,7 @@ spec:
       sources:
         - repoURL: git@github.com:kubeden/clopus-preview-environments.git
           targetRevision: "{{branch}}"
-          path: infrastructure/applications/atomsized.com/markdown-editor
+          path: infrastructure/applications/atomsized.com/markdown-editor/main-app
           kustomize:
             namePrefix: "preview-{{number}}-"
             patches:
@@ -63,7 +63,7 @@ spec:
                     value: "preview-{{number}}-markdown-editor-config"
         - repoURL: git@github.com:kubeden/clopus-preview-environments.git
           targetRevision: main
-          path: infrastructure/preview-secrets
+          path: infrastructure/applications/atomsized.com/markdown-editor/preview
           kustomize:
             namePrefix: "preview-{{number}}-"
       destination:

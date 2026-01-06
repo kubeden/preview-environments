@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: markdown-editor
+  name: atomsized-md
   namespace: argocd
   finalizers:
     - resources-finalizer.argocd.argoproj.io
@@ -10,7 +10,7 @@ spec:
   source:
     repoURL: git@github.com:kubeden/clopus-preview-environments.git
     targetRevision: main
-    path: infrastructure/applications/atomsized.com/markdown-editor
+    path: infrastructure/applications/atomsized.com/markdown-editor/main-app
   destination:
     server: https://kubernetes.default.svc
     namespace: atomsized
