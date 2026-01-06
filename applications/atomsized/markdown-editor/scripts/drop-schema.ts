@@ -21,6 +21,10 @@ async function main() {
   await client`DROP SCHEMA IF EXISTS ${client(schema)} CASCADE`;
 
   console.log(`Schema ${schema} dropped`);
+
+  // Reset search_path before returning connection to pool
+  await client`SET search_path TO public`;
+
   await client.end();
   process.exit(0);
 }

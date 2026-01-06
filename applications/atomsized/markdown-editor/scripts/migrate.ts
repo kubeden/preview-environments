@@ -37,6 +37,11 @@ async function main() {
     }
   }
 
+  // IMPORTANT: Reset search_path before returning connection to pool
+  // PgBouncer in transaction mode keeps connection state, which can
+  // contaminate other clients that get this connection from the pool
+  await client`SET search_path TO public`;
+
   await client.end();
   process.exit(0);
 }
