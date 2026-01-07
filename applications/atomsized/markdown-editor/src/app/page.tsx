@@ -18,7 +18,7 @@ export default async function Home() {
   return (
     <main
       style={{
-        minHeight: "100vh",
+        minHeight: "calc(100vh - 49px)",
         padding: "40px",
         maxWidth: "800px",
         margin: "0 auto",
@@ -26,27 +26,10 @@ export default async function Home() {
     >
       <header
         style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
           marginBottom: "40px",
         }}
       >
         <h1 style={{ fontSize: "24px", fontWeight: 500 }}>My Documents{isPreview ? " (Preview)" : ""}</h1>
-        <Link
-          href="/new"
-          style={{
-            padding: "8px 16px",
-            background: "#fff",
-            color: "#000",
-            textDecoration: "none",
-            borderRadius: "6px",
-            fontSize: "14px",
-            fontWeight: 500,
-          }}
-        >
-          New Document
-        </Link>
       </header>
 
       {docs.length === 0 ? (
