@@ -1,0 +1,279 @@
+name: Clopus Agent
+
+on:
+  issues:
+    types: [opened, edited]
+  issue_comment:
+    types: [created]
+
+env:
+  ALLOWED_USERS: "kubeden"
+
+jobs:
+  clopus:
+    runs-on: ubuntu-latest
+    # Trigger conditions:
+    # 1. Issue opened/edited with @clopus in body
+    # 2. PR comment with @clopus
+    if: |
+      (github.event_name == 'issues' && contains(github.event.issue.body, '@clopus')) ||
+      (github.event_name == 'issue_comment' && github.event.issue.pull_request && contains(github.event.comment.body, '@clopus'))
+
+    steps:
+      - name: Check authorization
+        id: auth
+        run: |
+          ACTOR="${{ github.actor }}"
+          if [[ ! ",${{ env.ALLOWED_USERS }}," == *",$ACTOR,"* ]]; then
+            echo "Unauthorized user: $ACTOR"
+            echo "authorized=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+          echo "authorized=true" >> $GITHUB_OUTPUT
+
+      - name: Exit if unauthorized
+        if: steps.auth.outputs.authorized != 'true'
+        run: |
+          echo "Skipping - user not authorized to trigger Clopus"
+          exit 0
+
+      - name: Determine context
+        id: context
+        run: |
+          if [[ "${{ github.event_name }}" == "issues" ]]; then
+            echo "type=issue" >> $GITHUB_OUTPUT
+            echo "number=${{ github.event.issue.number }}" >> $GITHUB_OUTPUT
+            echo "title=${{ github.event.issue.title }}" >> $GITHUB_OUTPUT
+            echo "branch=clopus/issue-${{ github.event.issue.number }}" >> $GITHUB_OUTPUT
+          else
+            # PR comment - get PR number
+            echo "type=pr_comment" >> $GITHUB_OUTPUT
+            echo "number=${{ github.event.issue.number }}" >> $GITHUB_OUTPUT
+            echo "title=${{ github.event.issue.title }}" >> $GITHUB_OUTPUT
+            # For PR comments, we'll push to the PR's head branch
+            echo "branch=" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Checkout repository
+        if: steps.auth.outputs.authorized == 'true'
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Get PR branch (for PR comments)
+        if: steps.auth.outputs.authorized == 'true' && steps.context.outputs.type == 'pr_comment'
+        id: pr_branch
+        run: |
+          PR_BRANCH=$(gh pr view ${{ steps.context.outputs.number }} --json headRefName -q '.headRefName')
+          echo "branch=$PR_BRANCH" >> $GITHUB_OUTPUT
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup branch
+        if: steps.auth.outputs.authorized == 'true'
+        run: |
+          git config user.name "clopus[bot]"
+          git config user.email "clopus[bot]@users.noreply.github.com"
+
+          if [[ "${{ steps.context.outputs.type }}" == "issue" ]]; then
+            BRANCH="${{ steps.context.outputs.branch }}"
+            # Check if branch exists
+            if git ls-remote --heads origin "$BRANCH" | grep -q "$BRANCH"; then
+              echo "Branch $BRANCH exists, checking out"
+              git checkout "$BRANCH"
+              git pull origin "$BRANCH"
+            else
+              echo "Creating new branch $BRANCH"
+              git checkout -b "$BRANCH"
+            fi
+          else
+            # PR comment - checkout the PR branch
+            BRANCH="${{ steps.pr_branch.outputs.branch }}"
+            git checkout "$BRANCH"
+            git pull origin "$BRANCH"
+          fi
+
+      - name: Comment - Starting
+        if: steps.auth.outputs.authorized == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issueNumber = ${{ steps.context.outputs.number }};
+            const type = '${{ steps.context.outputs.type }}';
+            const message = type === 'issue'
+              ? '🤖 **Clopus is on it!** Reading the issue and working on a solution...'
+              : '🤖 **Clopus acknowledged!** Reading the comment and making updates...';
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: issueNumber,
+              body: message
+            });
+
+      - name: Setup Node.js
+        if: steps.auth.outputs.authorized == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Claude Code CLI
+        if: steps.auth.outputs.authorized == 'true'
+        run: npm install -g @anthropic-ai/claude-code
+
+      - name: Setup Claude credentials
+        if: steps.auth.outputs.authorized == 'true'
+        run: |
+          mkdir -p ~/.claude
+          echo '${{ secrets.CLAUDE_AUTH }}' > ~/.claude/.credentials.json
+
+      - name: Fetch issue/PR context
+        if: steps.auth.outputs.authorized == 'true'
+        id: fetch_context
+        run: |
+          NUMBER="${{ steps.context.outputs.number }}"
+
+          # Fetch issue/PR body
+          gh issue view "$NUMBER" --json body -q '.body' > /tmp/issue_body.md
+
+          # Fetch all comments
+          gh issue view "$NUMBER" --json comments -q '.comments[].body' > /tmp/issue_comments.md
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Read master prompt
+        if: steps.auth.outputs.authorized == 'true'
+        id: master_prompt
+        run: |
+          if [[ -f "clopus/MASTER_PROMPT.md" ]]; then
+            echo "Master prompt found"
+          else
+            echo "Warning: clopus/MASTER_PROMPT.md not found"
+          fi
+
+      - name: Run Clopus (Claude Code)
+        if: steps.auth.outputs.authorized == 'true'
+        run: |
+          # Build the prompt with proper variable expansion
+          ISSUE_NUMBER="${{ steps.context.outputs.number }}"
+          ISSUE_TITLE="${{ steps.context.outputs.title }}"
+          CONTEXT_TYPE="${{ steps.context.outputs.type }}"
+
+          PROMPT="You are Clopus, an AI agent that helps with code changes based on GitHub issues and PR comments.
+
+          TASK CONTEXT:
+          - Issue/PR Number: #${ISSUE_NUMBER}
+          - Title: ${ISSUE_TITLE}
+          - Type: ${CONTEXT_TYPE}
+
+          Read the master prompt at clopus/MASTER_PROMPT.md for detailed instructions.
+
+          Then read these files for the task context:
+          - /tmp/issue_body.md (the issue/PR description)
+          - /tmp/issue_comments.md (all comments)
+
+          Follow the master prompt instructions to complete the task.
+          Make the necessary code changes.
+          Do NOT commit or push - the workflow will handle that."
+
+          # Run Claude Code in non-interactive mode
+          claude -p "$PROMPT" --allowedTools "Read,Write,Edit,Glob,Grep,Bash"
+
+      - name: Commit and push changes
+        if: steps.auth.outputs.authorized == 'true'
+        id: commit
+        run: |
+          # Check if there are changes
+          if [[ -z $(git status --porcelain) ]]; then
+            echo "No changes made"
+            echo "changes=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          git add -A
+          git commit -m "feat: clopus changes for #${{ steps.context.outputs.number }}
+
+          Automated changes by Clopus AI agent.
+
+          Resolves #${{ steps.context.outputs.number }}"
+
+          BRANCH="${{ steps.context.outputs.branch }}"
+          if [[ -z "$BRANCH" ]]; then
+            BRANCH="${{ steps.pr_branch.outputs.branch }}"
+          fi
+
+          git push origin "$BRANCH"
+          echo "changes=true" >> $GITHUB_OUTPUT
+
+      - name: Create PR (for new issues)
+        if: steps.auth.outputs.authorized == 'true' && steps.context.outputs.type == 'issue' && steps.commit.outputs.changes == 'true'
+        run: |
+          BRANCH="${{ steps.context.outputs.branch }}"
+          ISSUE_NUMBER="${{ steps.context.outputs.number }}"
+          ISSUE_TITLE="${{ steps.context.outputs.title }}"
+
+          # Check if PR already exists
+          EXISTING_PR=$(gh pr list --head "$BRANCH" --json number -q '.[0].number' || echo "")
+
+          if [[ -n "$EXISTING_PR" ]]; then
+            echo "PR #$EXISTING_PR already exists for branch $BRANCH"
+          else
+            gh pr create \
+              --title "[Clopus] $ISSUE_TITLE" \
+              --body "## Automated PR by Clopus
+
+          This PR addresses #$ISSUE_NUMBER
+
+          ### Changes made by Clopus AI agent
+
+          Please review the changes and test using the preview environment.
+
+          ---
+          🤖 Generated by [Clopus](https://github.com/kubeden/preview-environments)" \
+              --head "$BRANCH" \
+              --base main
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Comment - Completed
+        if: steps.auth.outputs.authorized == 'true' && steps.commit.outputs.changes == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issueNumber = ${{ steps.context.outputs.number }};
+            const type = '${{ steps.context.outputs.type }}';
+            const branch = '${{ steps.context.outputs.branch }}' || '${{ steps.pr_branch.outputs.branch }}';
+
+            let message;
+            if (type === 'issue') {
+              message = `✅ **Clopus completed!**
+
+            I've made the changes and opened a PR. Once the preview environment is ready, you can test the changes.
+
+            Branch: \`${branch}\``;
+            } else {
+              message = `✅ **Clopus completed!**
+
+            I've pushed additional changes to this PR. The preview environment will update automatically.`;
+            }
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: issueNumber,
+              body: message
+            });
+
+      - name: Comment - No changes
+        if: steps.auth.outputs.authorized == 'true' && steps.commit.outputs.changes == 'false'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: ${{ steps.context.outputs.number }},
+              body: '🤖 **Clopus finished** but made no code changes. The request may need clarification or the changes are already in place.'
+            });
