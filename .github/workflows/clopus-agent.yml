@@ -63,7 +63,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: ${{ secrets.CLOPUS_PAT }}
 
       - name: Get PR branch (for PR comments)
         if: steps.auth.outputs.authorized == 'true' && steps.context.outputs.type == 'pr_comment'
@@ -239,7 +239,7 @@ jobs:
               --base main
           fi
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.CLOPUS_PAT }}
 
       - name: Comment - Completed
         if: steps.auth.outputs.authorized == 'true' && steps.commit.outputs.changes == 'true'
