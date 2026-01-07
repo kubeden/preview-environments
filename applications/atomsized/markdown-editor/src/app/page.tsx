@@ -7,7 +7,6 @@ export const dynamic = "force-dynamic";
 
 export default async function Home() {
   const documents = getDocumentsTable();
-  const isPreview = process.env.DATABASE_SCHEMA && process.env.DATABASE_SCHEMA !== "public";
 
   const docs = await db
     .select()
@@ -18,36 +17,15 @@ export default async function Home() {
   return (
     <main
       style={{
-        minHeight: "100vh",
+        minHeight: "calc(100vh - 53px)",
         padding: "40px",
         maxWidth: "800px",
         margin: "0 auto",
       }}
     >
-      <header
-        style={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          marginBottom: "40px",
-        }}
-      >
-        <h1 style={{ fontSize: "24px", fontWeight: 500 }}>My Documents{isPreview ? " (Preview)" : ""}</h1>
-        <Link
-          href="/new"
-          style={{
-            padding: "8px 16px",
-            background: "#fff",
-            color: "#000",
-            textDecoration: "none",
-            borderRadius: "6px",
-            fontSize: "14px",
-            fontWeight: 500,
-          }}
-        >
-          New Document
-        </Link>
-      </header>
+      <h1 style={{ fontSize: "24px", fontWeight: 500, marginBottom: "40px" }}>
+        My Documents
+      </h1>
 
       {docs.length === 0 ? (
         <p style={{ color: "var(--text-secondary)" }}>
