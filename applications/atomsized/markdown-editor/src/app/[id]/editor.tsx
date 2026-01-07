@@ -72,7 +72,7 @@ export function Editor({ document }: EditorProps) {
   return (
     <div
       style={{
-        height: "100vh",
+        height: "calc(100vh - 53px)",
         display: "flex",
         flexDirection: "column",
         background: "var(--bg-primary)",
