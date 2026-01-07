@@ -12,12 +12,16 @@ env:
 jobs:
   clopus:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
     # Trigger conditions:
-    # 1. Issue opened/edited with @clopus in body
-    # 2. PR comment with @clopus
+    # 1. Issue opened/edited with /clopus in body
+    # 2. PR comment with /clopus
     if: |
-      (github.event_name == 'issues' && contains(github.event.issue.body, '@clopus')) ||
-      (github.event_name == 'issue_comment' && github.event.issue.pull_request && contains(github.event.comment.body, '@clopus'))
+      (github.event_name == 'issues' && contains(github.event.issue.body, '/clopus')) ||
+      (github.event_name == 'issue_comment' && github.event.issue.pull_request && contains(github.event.comment.body, '/clopus'))
 
     steps:
       - name: Check authorization
