@@ -2,7 +2,6 @@
 
 import { Document } from "@/db/schema";
 import dynamic from "next/dynamic";
-import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 const MDEditor = dynamic(() => import("@uiw/react-md-editor"), { ssr: false });
@@ -72,7 +71,7 @@ export function Editor({ document }: EditorProps) {
   return (
     <div
       style={{
-        height: "100vh",
+        height: "calc(100vh - 49px)",
         display: "flex",
         flexDirection: "column",
         background: "var(--bg-primary)",
@@ -87,16 +86,6 @@ export function Editor({ document }: EditorProps) {
           borderBottom: "1px solid var(--border)",
         }}
       >
-        <Link
-          href="/"
-          style={{
-            color: "var(--text-secondary)",
-            textDecoration: "none",
-            fontSize: "14px",
-          }}
-        >
-          ← Back
-        </Link>
         <input
           type="text"
           value={title}
